@@ -4,12 +4,19 @@
  */
 package eppclient;
 
+import eppclient.contact.EppContactInfo;
+import eppclient.contact.EppContact;
 import java.net.CookieManager;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.List;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.parser.Parser;
 
 /**
  *
@@ -27,23 +34,37 @@ public class EppClient {
     private final String clID = "acropolis";
     private final String pw = "1234";
     private final String clTRID = "acro";
+    private final String prefix = "c78";
 
     private String lastPayload;
     private String lastResponse;
     private Integer lastHttpResponseCode;
-    private Integer lastEppResultCode;
-
+   
+    
+    private String lastEppResultCode;
+    private String lastEppResultMessage;
+    
+    
     public CookieManager getCookieManager() {
         return cookieManager;
     }
 
-    public EppClient() {
-//        this.httpClient = HttpClient
-//                .newBuilder()
-//                .cookieHandler(cookieManager).build();
-//        
+    public String getPrefix() {
+        return prefix;
+    }
 
-        this.httpClient = HttpClient.newHttpClient();
+    public String getLastEppResultCode() {
+        return lastEppResultCode;
+    }
+
+    
+    
+    
+    public EppClient() {
+        this.httpClient = HttpClient
+                .newBuilder()
+                .cookieHandler(cookieManager).build();
+//        this.httpClient = HttpClient.newHttpClient();
     }
 
     public String getLastPayload() {
@@ -58,7 +79,13 @@ public class EppClient {
         return lastHttpResponseCode;
     }
 
-    public void send(String xml) throws Exception {
+    public String getLastEppResultMessage() {
+        return lastEppResultMessage;
+    }
+    
+    
+
+    public Document sendXml(String xml) throws Exception {
         lastPayload = xml;
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(EPP_URL))
@@ -72,7 +99,10 @@ public class EppClient {
                 );
         lastHttpResponseCode = response.statusCode();
         lastResponse = response.body();
-        lastEppResultCode = 
+        Document document = Jsoup.parse(lastResponse, Parser.xmlParser());
+        lastEppResultCode = document.select("result").attr("code");
+        lastEppResultMessage = document.getElementsByTag("msg").text();
+        return document;
     }
 
     public void hello() throws Exception {
@@ -85,7 +115,7 @@ public class EppClient {
             <hello/>
         </epp>
         """;
-        send(helloXml);
+        sendXml(helloXml);
     }
 
     public void login() throws Exception {
@@ -120,7 +150,8 @@ public class EppClient {
             </command>
         </epp>
         """;
-        send(xml);
+        sendXml(xml);
+        
     }
 
     public void contactCheck(String contactId) throws Exception {
@@ -146,7 +177,14 @@ public class EppClient {
           </command>
         </epp>
         """;
-        send(xml);
+        sendXml(xml);
     }
+
+    public EppContactInfo contactInfo(String contactId) throws Exception {
+        EppContact contact = new EppContact();
+        return contact.info(this, contactId);
+    }
+
+    
 
 }
