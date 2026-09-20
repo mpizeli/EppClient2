@@ -4,28 +4,39 @@
  */
 package eppclient;
 
+import java.net.CookieManager;
+import java.net.HttpCookie;
+import java.util.List;
+
 /**
  *
  * @author nekta
  */
 public class Main {
 
+    static EppClient client ;
+    
+    static private void logit() {
+        System.out.println(client.getLastHttpResponseCode());
+        System.out.println(client.getLastResponse());
+    }
+    
     public static void main(String[] args) throws Exception {
-        EppClient client = new EppClient();
+        client = new EppClient();
 
-        String helloXml = """
-        <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-        <epp
-            xmlns="urn:ietf:params:xml:ns:epp-1.0"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd">
-            <hello/>
-        </epp>
-        """;
+        client.login();
 
-        String received = client.send(helloXml);
+        logit();
+        
+        List<HttpCookie> cookies = client.getCookieManager().getCookieStore().getCookies();
 
-        System.out.println(received);
+        for (HttpCookie cookie : cookies) {
+            System.out.println("Όνομα: " + cookie.getName() + " | Τιμή: " + cookie.getValue());
+        }
+        
+        client.contactCheck("nektarios");
+        
+        logit();
     }
 
 }
